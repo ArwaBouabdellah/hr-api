@@ -18,6 +18,12 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@filters/*": ["src/common/filters/*"],
+      "@constants/*": ["src/common/constants/*"],
+      "@interfaces/*": ["src/common/interfaces/*"],
+      "@utils/*": ["src/common/utils/*"],
+      "@pipes/*": ["src/common/pipes/*"],
+      "@guards/*": ["src/common/guards/*"],
       "@module/*": ["src/modules/*"],
       "@common/*": ["src/common/*"],
       "@config/*": ["src/config/*"]

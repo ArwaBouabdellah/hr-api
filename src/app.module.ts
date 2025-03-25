@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import databaseConfig from '@config/database.config';
 import serverConfig from '@config/server.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
 
 @Module({
   imports: [
@@ -26,13 +25,12 @@ import { UsersModule } from './modules/users/users.module';
         autoLoadEntities: configService.get<boolean>(
           'database.autoLoadEntities',
         ),
-        entities: [__dirname + '/**/*.entity.ts'],
+        entities: ['./dist/**/*.entity{.ts,.js}'],
       }),
       inject: [ConfigService],
     }),
     UsersModule,
+    DepartmentsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
