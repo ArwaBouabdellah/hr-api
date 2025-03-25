@@ -28,12 +28,10 @@ export default tseslint.config(
 
   {
     rules: {
+      'eslint max-len': ['error', { code: 100 }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error'],
-      'prettier/prettier': ['error', { endOfLine: 'auto' }],
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
 );
