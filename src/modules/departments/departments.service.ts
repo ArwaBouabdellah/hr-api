@@ -1,4 +1,4 @@
-import { forwardRef, HttpException, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, HttpException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateDepartmentDto, DepartmentSchema } from './dto/department.dto';
 import { Department } from './entities/department.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,6 +8,7 @@ import { ApiResponse } from '@utils/response.util';
 import { HttpStatusCodes } from '@constants/http.constants';
 import { UsersService } from '@module/users/users.service';
 import { UserSchema } from '@module/users/dto/user.dto';
+import { formatName } from '@utils/format-name.util';
 
 @Injectable()
 export class DepartmentsService {
@@ -23,7 +24,20 @@ export class DepartmentsService {
       if ('error' in manager) {
         return ApiResponse.error(manager.statusCode, manager.error);
       }
-      const dep = this.departmentsRepository.create({ ...dto, manager: manager.data });
+
+      if (dto.parentId && dto.parentId > 0) {
+        const isDepExists = await this.findById(dto.parentId);
+        if ('error' in isDepExists) {
+          return ApiResponse.error(HttpStatusCodes.CONFLICT, isDepExists.error);
+        }
+      }
+
+      const dep = this.departmentsRepository.create({
+        ...dto,
+        name: formatName(dto.name),
+        manager: manager.data,
+      });
+      
       await this.departmentsRepository.save(dep);
       return ApiResponse.success(HttpStatusCodes.CREATED, dep);
     } catch (error) {
@@ -31,14 +45,34 @@ export class DepartmentsService {
     }
   }
 
-  findAll() {
-    return `This action returns all departments`;
+  async findAll() {
+    try {
+      return await this.departmentsRepository.find({ relations: ['manager'] });
+    } catch (error) {
+      return handleServiceError(error);
+    }
   }
+
+  async findByManagerId(managerId: number) {
+    try {
+      const manager = await this.userService.findById(managerId);
+      if ('error' in manager) {
+        return ApiResponse.error(manager.statusCode, manager.error);
+      }
+      return await this.departmentsRepository.find({ where: { manager: { id: managerId } } });
+    } catch (error) {
+      return handleServiceError(error);
+    }
+  }
+
   async findById(id: number) {
     try {
-      const dep = await this.departmentsRepository.findOneBy({ id });
+      const dep = await this.departmentsRepository.findOne({
+        where: { id },
+        relations: ['manager'],
+      });
       if (!dep) {
-        return ApiResponse.error(HttpStatusCodes.NOT_FOUND, 'Department not found');
+        throw new NotFoundException('Department not found');
       }
       return ApiResponse.success(HttpStatusCodes.OK, dep);
     } catch (error) {

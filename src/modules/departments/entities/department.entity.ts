@@ -16,6 +16,9 @@ export class Department {
   @Column()
   name: string;
 
+  @Column({ nullable: true })
+  parentId: number;
+
   @Column({ default: true })
   isActive: boolean;
 

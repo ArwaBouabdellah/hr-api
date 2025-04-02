@@ -5,16 +5,8 @@ export const DepartmentSchema = z.object({
   description: z.string().optional(),
   isActive: z.boolean().default(true),
   managerId: z.number().int('').positive('Invalid Manager ID'),
+  parentId: z.number().int('Invalid Parent ID').optional(),
 });
-
-const result = DepartmentSchema.safeParse({
-  name: 'string',
-  description: 'string',
-  isActive: true,
-  managerId: 'jj',
-});
-
-console.log(result);
 
 export type CreateDepartmentDto = z.infer<typeof DepartmentSchema>;
 
