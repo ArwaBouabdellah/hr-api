@@ -11,11 +11,16 @@ export const UserSchema = z.object({
     .max(15, 'Phone number must be at maximum 15 digits')
     .regex(/^\d{8,15}$/, 'Phone number must contain only digits')
     .optional(),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
   departmentId: z.number().int().positive('Invalid department ID').optional(),
   role: z.enum([Role.ADMIN, Role.EMPLOYEE, Role.HR]).default(Role.EMPLOYEE),
 });
-
 
 export const CreateUserSchema = UserSchema.refine((data) => data.email || data.tel, {
   message: "Either 'email' or 'tel' must be provided",

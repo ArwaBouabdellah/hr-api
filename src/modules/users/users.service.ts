@@ -1,4 +1,10 @@
-import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -8,6 +14,7 @@ import { handleServiceError } from '@utils/error-handler.util';
 import { ApiResponse } from '@utils/response.util';
 import { HttpStatusCodes } from '@constants/http.constants';
 import { UserMessages } from '@constants/response-messages.constants';
+import { formatName } from '@utils/format-name.util';
 
 @Injectable()
 export class UsersService {
@@ -34,29 +41,56 @@ export class UsersService {
         }
       }
 
-      const user = this.usersRepository.create(dto);
+      const user = this.usersRepository.create({
+        ...dto,
+        firstName: formatName(dto.firstName),
+        lastName: formatName(dto.lastName),
+      });
+
       if (dto.departmentId) {
         const departmentResponse = await this.departmentService.findById(dto.departmentId);
-        if ('error' in departmentResponse || departmentResponse.statusCode === 404) {
+        if ('error' in departmentResponse) {
           return departmentResponse;
         }
         user.department = departmentResponse.data;
       }
 
       await this.usersRepository.save(user);
-      return ApiResponse.success(HttpStatusCodes.OK, user);
+      return ApiResponse.success(HttpStatusCodes.CREATED, user);
     } catch (error) {
       return handleServiceError(error);
     }
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll() {
+    try {
+      return await this.usersRepository.find({ relations: ['department'] });
+    } catch (error) {
+      return handleServiceError(error);
+    }
+  }
+
+  async findByDepartment(departmentId: number) {
+    try {
+      const dep = await this.departmentService.findById(departmentId);
+      if ('error' in dep) {
+        return dep;
+      }
+      return await this.usersRepository.find({
+        where: { department: { id: departmentId } },
+        relations: ['department'],
+      });
+    } catch (error) {
+      return handleServiceError(error);
+    }
   }
 
   async findByEmail(email: string) {
     try {
       const user = await this.usersRepository.findOneBy({ email });
+      if (user) {
+        throw new ConflictException('Email already taken');
+      }
       return ApiResponse.success(HttpStatusCodes.OK, !!user);
     } catch (error) {
       return handleServiceError(error);
@@ -66,6 +100,9 @@ export class UsersService {
   async findByTel(tel: string) {
     try {
       const user = await this.usersRepository.findOneBy({ tel });
+      if (user) {
+        throw new ConflictException(`Tel already exists`);
+      }
       return ApiResponse.success(HttpStatusCodes.OK, !!user);
     } catch (error) {
       return handleServiceError(error);
@@ -76,10 +113,9 @@ export class UsersService {
     try {
       const user = await this.usersRepository.findOneBy({ id });
       if (!user) {
-        if (!user) {
-          throw new NotFoundException(UserMessages.USER_NOT_FOUND(id));
-        }
+        throw new NotFoundException(UserMessages.USER_NOT_FOUND(id));
       }
+
       return ApiResponse.success(HttpStatusCodes.OK, user);
     } catch (error) {
       return handleServiceError(error);
